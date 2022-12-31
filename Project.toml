@@ -1,7 +1,7 @@
 name = "Ananke"
 uuid = "1a22c728-0c56-469f-9cf3-be645c8711d1"
 authors = ["Ka Wai HO <woodyho13@gmail.com> "]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
