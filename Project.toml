@@ -12,6 +12,7 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
 TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
+RegistryTools = "d1eb7eb1-105f-429d-abf5-b0f65cb9e2c4"
 
 [compat]
 CUDA = "^3.7.1"
@@ -21,3 +22,4 @@ julia = "^1.8.3"
 HDF5 = "^0.14.3"
 ProgressMeter = "^1.7.2"
 TimerOutputs = "^0.5.21"
+RegistryTools = "1.9"
