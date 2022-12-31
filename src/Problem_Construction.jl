@@ -12,7 +12,7 @@ include("hydro/recon/PPM.jl");
 include("hydro/recon/DC.jl");
 include("hydro/Solver/HLLC.jl");
 include("hydro/Solver/HLLE.jl");
-include("eos/adiabatic.jl");
+include("eos/Adiabatic.jl");
 include("eos/Isothermal.jl");
 
 export ProblemConstruction
