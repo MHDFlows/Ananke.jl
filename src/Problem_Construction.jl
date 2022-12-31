@@ -274,7 +274,7 @@ function tmpConstruction(grid)
   nx_tot = nx == 1 ?  1 : nx + 2*Nghost  
   ny_tot = ny == 1 ?  1 : ny + 2*Nghost
   nz_tot = nz == 1 ?  1 : nz + 2*Nghost
-
+ 
   wl  = CUDA.zeros(T,(nx_tot, ny_tot, nz_tot, Nhydro))
   wr  = CUDA.zeros(T,(nx_tot, ny_tot, nz_tot, Nhydro))
   
