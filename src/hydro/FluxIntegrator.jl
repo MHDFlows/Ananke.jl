@@ -1,6 +1,4 @@
 #module FluxIntegrator
-using LoopVectorization
-using MuladdMacro:@muladd
 include("ComputeFlux.jl");
 
 function FluxIntegrator!(U::CuArray{T,4},dt::t,prob;Order=1) where {T,t}
