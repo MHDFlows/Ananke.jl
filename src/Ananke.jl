@@ -13,7 +13,7 @@ using
 
 
 include("Problem_Construction.jl")
-include("Integrator.JL")
+include("Integrator.jl")
 include("utils/IC.jl")
 
 export 
