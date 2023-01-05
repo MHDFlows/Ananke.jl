@@ -133,7 +133,7 @@ function X1R_Outflow_MPI!(U::CuArray{T,4},grid)  where T
 end
 
 
-function X2L_Outflow_MPI!(U,grid) (U,grid)
+function X2L_Outflow_MPI!(U,grid)
   X2L_Outflow!(U,grid)
 
   # Get info of the boundary data

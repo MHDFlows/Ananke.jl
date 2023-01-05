@@ -192,21 +192,16 @@ function GridConstruction(Nx,Ny,Nz,nx,ny,nz, Lx,Ly,Lz;
         length(findall(Boundary.=="Reflective"));
   N_B == 6 ? nothing : error("Boundary is not declared correctly!");
 
-  X₁L_BoundaryExchange! = Boundary[1] == "Outflow" ? X1L_Outflow! : 
-                          Boundary[1] == "Reflective" ?  X1L_Reflective! : X1L_Periodic!;
-  X₁R_BoundaryExchange! = Boundary[2] == "Outflow" ? X1R_Outflow! : 
-                          Boundary[2] == "Reflective" ?  X1R_Reflective! : X1R_Periodic!;
-  X₂L_BoundaryExchange! = Boundary[3] == "Outflow" ? X2L_Outflow! : 
-                          Boundary[3] == "Reflective" ?  X2L_Reflective! : X2L_Periodic!;
-  X₂R_BoundaryExchange! = Boundary[4] == "Outflow" ? X2R_Outflow! : 
-                          Boundary[4] == "Reflective" ?  X2R_Reflective! : X2R_Periodic!;
-  X₃L_BoundaryExchange! = Boundary[5] == "Outflow" ? X3L_Outflow! : 
-                          Boundary[5] == "Reflective" ?  X3L_Reflective! : X3L_Periodic!;
-  X₃R_BoundaryExchange! = Boundary[6] == "Outflow" ? X3R_Outflow! : 
-                          Boundary[6] == "Reflective" ?  X3R_Reflective! : X3R_Periodic!;
+  Bval_func_list = []
+  for (BoundaryL,BoundaryR,i) in zip( Boundary[[1,3,5]],Boundary[[2,4,6]],(1,2,3))
+    XᵢL_BoundaryExchange! = eval(Symbol(:X,i,:L_,BoundaryL,:!))
+    XᵢR_BoundaryExchange! = eval(Symbol(:X,i,:R_,BoundaryL,:!))
+    
+    push!(Bval_func_list,XᵢL_BoundaryExchange!)
+    push!(Bval_func_list,XᵢR_BoundaryExchange!)
+  end
 
   # Correct the nx,ny,nz if it is 1/2D case
-
   is,ie = Nx == 1 ? (1,1) : (1+Nghost, Nx+Nghost)
   js,je = Ny == 1 ? (1,1) : (1+Nghost, Ny+Nghost)
   ks,ke = Nz == 1 ? (1,1) : (1+Nghost, Nz+Nghost)
@@ -220,11 +215,11 @@ function GridConstruction(Nx,Ny,Nz,nx,ny,nz, Lx,Ly,Lz;
   BvalC = CUDA.ones(T,(Nx_tot, Ny_tot,Nghost, Nhydro))
 
   x1  = x₁_struct(is, ie, x1f, x1v, Δx1f, Δx1v, BvalA,
-                  X₁L_BoundaryExchange!, X₁R_BoundaryExchange!)
+                  Bval_func_list[1], Bval_func_list[2])
   x2  = x₂_struct(js, je, x2f, x2v, Δx2f, Δx2v, BvalB,
-                  X₂L_BoundaryExchange!, X₂R_BoundaryExchange!)
+                  Bval_func_list[3], Bval_func_list[4])
   x3  = x₃_struct(ks, ke, x3f, x3v, Δx3f, Δx3v, BvalC,
-                  X₃L_BoundaryExchange!, X₃R_BoundaryExchange!)
+                  Bval_func_list[5], Bval_func_list[6])
 
   return  Grid( Nx, Ny, Nz, Nx, Ny, Nz, Nghost,
                 Lx_st, Ly_st, Lz_st,

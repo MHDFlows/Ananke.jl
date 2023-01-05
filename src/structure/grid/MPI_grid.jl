@@ -51,74 +51,35 @@ function GetLLwithNeighbor(LL)
 end
 
 function Boundary_Function(x1s,x1e,x2s,x2e,x3s,x3e,
-						               Nx, Ny, Nz, Boundary)
-	if x1s == 1 
-		X₁L_BoundaryExchange! = Boundary[1] == "outflow" ? X1L_Outflow_MPI! : 
-        	                  Boundary[1] == "reflective" ?  X1L_Reflective_MPI! : X1L_Periodic_MPI!
-	else
-		X₁L_BoundaryExchange! = X1L_Periodic_MPI!
-	end
+						               Ncx, Ncy, Ncz, Boundary)
 
-	if x1e == Nx
-		X₁R_BoundaryExchange! = Boundary[2] == "outflow" ? X1R_Outflow_MPI! : 
-    	                      Boundary[2] == "reflective" ?  X1R_Reflective_MPI! : X1R_Periodic_MPI!
+  Bval_func_list = []
+  for (xis,xie,N,BoundaryL,BoundaryR,i) in zip((x1s,x2s,x3s),(x1e,x2e,x3e),(Ncx,Ncy,Ncz),
+                                                Boundary[[1,3,5]],Boundary[[2,4,6]],(1,2,3))
+    if N > 1
+      # meta programming for pointing the function
+      #example : X1L_Outflow_MPI!/X1L_Outflow!
+      XᵢL_BoundaryExchange! = eval(Symbol(:X,i,:L_,BoundaryL,:_MPI!))
+      XᵢR_BoundaryExchange! = eval(Symbol(:X,i,:R_,BoundaryL,:_MPI!))
     else
-		X₁R_BoundaryExchange! = X1R_Periodic_MPI!
+      XᵢL_BoundaryExchange! = eval(Symbol(:X,i,:L_,BoundaryL,:!))
+      XᵢR_BoundaryExchange! = eval(Symbol(:X,i,:R_,BoundaryL,:!))
+    end
+    push!(Bval_func_list,XᵢL_BoundaryExchange!)
+    push!(Bval_func_list,XᵢR_BoundaryExchange!)
   end
 
-  if x2s == 1
-    X₂L_BoundaryExchange! = Boundary[3] == "outflow" ? X2L_Outflow_MPI! : 
-      	                    Boundary[3] == "reflective" ?  X2L_Reflective_MPI! : X2L_Periodic_MPI!
-  else
-    	X₂L_BoundaryExchange! = X2L_Periodic_MPI!
-  end
-  if x2e == Ny
-	  X₂R_BoundaryExchange! = Boundary[4] == "outflow" ? X2R_Outflow_MPI! : 
-	                          Boundary[4] == "reflective" ?  X2R_Reflective_MPI! : X2R_Periodic_MPI!
-  else
-	   X₂R_BoundaryExchange! = X2R_Periodic_MPI!
-	end
-
-  if x3s == 1
-	  X₃L_BoundaryExchange! = Boundary[5] == "outflow" ? X3L_Outflow_MPI! : 
-	                          Boundary[5] == "reflective" ?  X3L_Reflective_MPI! : X3L_Periodic_MPI!
-  else
-	  X₃L_BoundaryExchange! = X3L_Periodic_MPI!
-  end
-
-  if x3e == Nz
-	  X₃R_BoundaryExchange! = Boundary[6] == "outflow" ? X3R_Outflow_MPI! : 
-	                     		  Boundary[6] == "reflective" ?  X3R_Reflective_MPI! : X3R_Periodic_MPI!
-  else
-  	X₃R_BoundaryExchange! = X3R_Periodic_MPI!
-	end
-
-	return  X₁L_BoundaryExchange!,
-			    X₁R_BoundaryExchange!,
-			    X₂L_BoundaryExchange!,
-			    X₂R_BoundaryExchange!,
-			    X₃L_BoundaryExchange!,
-			    X₃R_BoundaryExchange!
-end
-
-function GetFace_n_Edge(L_st,L_ed,N,Nghost)
-    Δx   = ifelse(N==1, (L_ed-L_st),(L_ed-L_st)/N)
-    x1f  = collect(L_st:Δx:L_ed-Δx)
-    G1f1 = collect(L_st - Nghost*Δx: Δx : L_st -            Δx) 
-    G1f2 = collect(L_ed +      0*Δx: Δx : L_ed + (Nghost-1)*Δx) 
-    x1f  = vcat(G1f1,x1f,G1f2)
-    x1v  = (x1f[2:end] + x1f[1:end-1])/2
-    Δx1f = diff(x1f) 
-    Δx1v = copy(Δx1f) #diff(x1v) for fyture
-    return x1f,x1v,Δx1f,Δx1v
+	return Bval_func_list[:]
 end
 
 function MPIGridConstruction(Nx,Ny,Nz, nx, ny, nz, Lx,Ly,Lz 
     	             				   T = Float64, Bfield = false, Nghost = 2, 
-			             			     Boundary = ["outflow","outflow",
-			             			                 "outflow","outflow",
-			             			                 "outflow","outflow"],test=false)
-    
+			             			     Boundary = ["Outflow","Outflow",
+			             			                 "Outflow","Outflow",
+			             			                 "Outflow","Outflow"],test=false)
+    # Be Careful :
+    # MPI.ie != grid.x1.x1e as MPI points to global index while x1 is for local index
+
     # U -> ρ,e,p1,p2,p3
     # W -> ρ,p,v1,v2,v3
     if Bfield == true
@@ -174,15 +135,27 @@ function MPIGridConstruction(Nx,Ny,Nz, nx, ny, nz, Lx,Ly,Lz
     N_B == 6 ? nothing : error("Boundary is not declared correctly!")
 
     X₁L_BE!, X₁R_BE!, X₂L_BE!, X₂R_BE!, X₃L_BE!, X₃R_BE! = Boundary_Function(x1s,x1e,x2s,x2e,x3s,x3e,
-	  					    											          	                          Nx, Ny, Nz, Boundary)
+	  					    											          	                         Ncx,Ncy,Ncz, Boundary)
     
-    BvalA = ones((Nhydro,Nghost,ny + 2*Nghost,nz + 2*Nghost))    
-    BvalB = ones((Nhydro,nx + 2*Nghost,Nghost,nz + 2*Nghost))
-    BvalC = ones((Nhydro,nx + 2*Nghost,ny + 2*Nghost,Nghost))
+    # Construct the local index and it if it is 1/2D case
+    is,ie = Nx == 1 ? (1,1) : (1+Nghost, Nx+Nghost)
+    js,je = Ny == 1 ? (1,1) : (1+Nghost, Ny+Nghost)
+    ks,ke = Nz == 1 ? (1,1) : (1+Nghost, Nz+Nghost)
 
-    x1  = x₁_strcut(1+Nghost,nx+Nghost,x1f,x1v,Δx1f,Δx1v,BvalA,X₁L_BE!,X₁R_BE!)
-    x2  = x₂_strcut(1+Nghost,ny+Nghost,x2f,x2v,Δx2f,Δx2v,BvalB,X₂L_BE!,X₂R_BE!)
-    x3  = x₃_strcut(1+Nghost,nz+Nghost,x3f,x3v,Δx3f,Δx3v,BvalC,X₃L_BE!,X₃R_BE!)
+    Nx_tot = Nx == 1 ?  1 : nx + 2*Nghost  
+    Ny_tot = Ny == 1 ?  1 : ny + 2*Nghost
+    Nz_tot = Nz == 1 ?  1 : nz + 2*Nghost
+
+    BvalA = CUDA.ones(T,(Nghost, Ny_tot,Nz_tot, Nhydro))  
+    BvalB = CUDA.ones(T,(Nx_tot, Nghost,Nz_tot, Nhydro))
+    BvalC = CUDA.ones(T,(Nx_tot, Ny_tot,Nghost, Nhydro))
+
+    x1  = x₁_struct(is, ie, x1f, x1v, Δx1f, Δx1v, BvalA,
+                    X₁L_BE!,X₁R_BE!)
+    x2  = x₂_struct(js, je, x2f, x2v, Δx2f, Δx2v, BvalB,
+                    X₂L_BE!,X₂R_BE!)
+    x3  = x₃_struct(ks, ke, x3f, x3v, Δx3f, Δx3v, BvalC,
+                    X₃L_BE!,X₃R_BE!)
 
     return  MPI_Grid( Nx,Ny,Nz,nx,ny,nz,Nghost,
                       Lx_st,Ly_st,Lz_st,
