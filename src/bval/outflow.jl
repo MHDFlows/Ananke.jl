@@ -101,12 +101,12 @@ end
 
 #============== MPI section ========================#
 
-function X1L_Outflow_MPI!(U,grid)
+function X1L_Outflow_MPI!(U::CuArray{T,4},grid)  where T
   # MPI version of Outflow
   # In addition to single core outflow, the data in the Right/Left
   #would also need to its neighbor
   
-  X1L_Outflow!(U::CuArray{T,4},grid) where T;
+  X1L_Outflow!(U,grid)
 
   # Get info of the boundary data
   Nghost = grid.Nghost::Int;
@@ -119,8 +119,8 @@ function X1L_Outflow_MPI!(U,grid)
 
 end
 
-function X1R_Outflow_MPI!(U,grid)
-  X1R_Outflow!(U::CuArray{T,4},grid) where T;
+function X1R_Outflow_MPI!(U::CuArray{T,4},grid)  where T
+  X1R_Outflow!(U,grid)
 
   # Get info of the boundary data
   Nghost = grid.Nghost::Int;
@@ -133,8 +133,8 @@ function X1R_Outflow_MPI!(U,grid)
 end
 
 
-function X2L_Outflow_MPI!(U,grid)
-  X2L_Outflow!(U::CuArray{T,4},grid) where T;
+function X2L_Outflow_MPI!(U,grid) (U::CuArray{T,4},grid) where T
+  X2L_Outflow!(U,grid)
 
   # Get info of the boundary data
   Nghost = grid.Nghost::Int;

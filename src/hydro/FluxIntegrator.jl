@@ -76,10 +76,6 @@ function Add∂F∂x!(u_out,weight,prob)
   js,je = grid.x2.js::Int,grid.x2.je::Int;
   ks,ke = grid.x3.ks::Int,grid.x3.ke::Int;
   
-  ∂ᵢ(A) = diff(A,dims=1)
-  ∂ⱼ(A) = diff(A,dims=2)
-  ∂ₖ(A) = diff(A,dims=3)
-  
   # get the F,H,G Flux
   F,H,G = prob.flux.F,prob.flux.H,prob.flux.G
 

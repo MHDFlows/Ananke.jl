@@ -79,6 +79,10 @@ function UpdateCFL!(prob,W; Coef=0.3, γ = 5/3)
   csmax = √(maximum(cs²))
   dt = Coef*minimum((Δx₁/vxmax, Δx₂/vymax, Δx₃/vzmax, 
                      Δx₁/csmax, Δx₂/csmax, Δx₃/csmax,dt))
+
+  if MPI
+    dt = Get_GlobalMin(dt,prob.grid.MPI)
+  end
   
   if isnan(dt)
     error("detected NaN in CFL function!");
