@@ -290,7 +290,7 @@ show(io::IO, p::Problem) =
           "  │                         x₂(L/R) ",(p.flag.B_X2L,p.flag.B_X2R),'\n',
           "  │                         x₃(L/R) ",(p.flag.B_X3L,p.flag.B_X3R),'\n', 
           "  │     Setting                                            ",'\n',  
-          "  │     ├─────────── grid: grid (on GPU)", '\n',
+          "  │     ├─────────── grid: grid ( $eltype(grid) on GPU)", '\n',
           "  │     ├─────────── flux: flux", '\n',
           "  │     ├── user function: usr_func", '\n',
           "  └─────├─ conserved Vars: sol.U", '\n',
