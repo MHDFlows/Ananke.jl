@@ -73,7 +73,7 @@ function X3L_Outflow!(U,grid)
   ghost_Lst,ghost_Led =          1,   Nghost
   bval_Lst ,bval_Led  = Nghost + 1, 2*Nghost
          
-  C = grid.x3.BvalC::CuArray{T,4}    
+  C = grid.x3.BvalC   
 
   #exchange of boundary value
   SwapData = @view U[:,:,ghost_Lst:ghost_Led,:]
