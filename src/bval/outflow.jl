@@ -11,7 +11,7 @@ function X1L_Outflow!(U,grid)
   ghost_Lst,ghost_Led =          1,   Nghost
   bval_Lst,bval_Led   = Nghost + 1, 2*Nghost
     
-  A = grid.x1.BvalA::CuArray{T,4}    
+  A = grid.x1.BvalA   
 
   #exchange of boundary value
   SwapData = @view U[ghost_Lst:ghost_Led,:,:,:]
@@ -27,7 +27,7 @@ function X1R_Outflow!(U,grid)
   ghost_Rst,ghost_Red =   Nghost - 1, 0
   bval_Rst,bval_Red   = 2*Nghost - 1, Nghost
 
-  A = grid.x1.BvalA::CuArray{T,4}    
+  A = grid.x1.BvalA  
 
   SwapData = @view U[end - ghost_Rst:end - ghost_Red, :, :, :]
   TranData = @view U[end -  bval_Red:end -  bval_Red, :, :, :]
@@ -42,7 +42,7 @@ function X2L_Outflow!(U,grid)
   ghost_Lst,ghost_Led =          1,   Nghost
   bval_Lst,bval_Led   = Nghost + 1, 2*Nghost
        
-  B = grid.x2.BvalB::CuArray{T,4}    
+  B = grid.x2.BvalB   
     
   #exchange of boundary value
   SwapData = @view U[:,ghost_Lst:ghost_Led,:,:]
@@ -58,7 +58,7 @@ function X2R_Outflow!(U,grid)
   ghost_Rst,ghost_Red =   Nghost - 1, 0
   bval_Rst,bval_Red   = 2*Nghost - 1, Nghost
     
-  B = grid.x2.BvalB::CuArray{T,4}    
+  B = grid.x2.BvalB
   
   SwapData = @view U[:,end - ghost_Rst:end - ghost_Red,:,:]
   TranData = @view U[:,end -  bval_Red:end -  bval_Red,:,:]
@@ -89,7 +89,7 @@ function X3R_Outflow!(U,grid)
   ghost_Rst,ghost_Red =   Nghost - 1, 0
   bval_Rst,bval_Red   = 2*Nghost - 1, Nghost
     
-  C = grid.x3.BvalC::CuArray{T,4}
+  C = grid.x3.BvalC
 
   SwapData = @view U[:,:,end - ghost_Rst:end - ghost_Red,:]
   TranData = @view U[:,:,end -  bval_Red:end -  bval_Red,:]
