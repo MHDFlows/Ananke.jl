@@ -26,7 +26,7 @@ function VL2!(prob)
     copyto!(U_half, U);
 
     # Half Step First (dt/2 with order = 1) then Full step (dt with order = 2)
-    for (Uᵢ, order, dtᵢ) ∈ zip((U_half,U),(1,2),(dt/2,dt)) 
+    for (Uᵢ, order, dtᵢ) ∈ zip((U_half,U),(1, order),(dt/2,dt)) 
       @timeit_debug prob.debugTimer "Flux intregation" CUDA.@sync begin
         FluxIntegrator!(Uᵢ, dtᵢ, prob; Order=order); 
         prob.usr_func(Uᵢ, dtᵢ, prob);
