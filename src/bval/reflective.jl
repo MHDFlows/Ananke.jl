@@ -5,23 +5,27 @@ Vars : SwapData : Data in the ghost zone that being swapped in the boundary valu
 
 Idea : using the julia array abstraction represention as much as possbile for the future upgrade to GPU and MPI
 """
-function X1L_Reflective!(U::CuArray{T,4},grid) where T
+function X1L_Reflecting!(U::CuArray{T,4},grid) where T
   Nghost = grid.Nghost::Int;
 
   # Define the ghost zone index and boundary zone index
   ghost_Lst,ghost_Led =          1,   Nghost;
   bval_Lst,bval_Led   = Nghost + 1, 2*Nghost;
     
-  #exchange of boundary value
+  # exchange of boundary value
   SwapData = @view U[ghost_Led:-1:ghost_Lst,:,:,:];
   TranData = @view U[ bval_Lst: 1:bval_Led ,:,:,:];
   copyto!(SwapData , TranData);
+
+  # Reflecting the X-AXIS Velocity
+  IVX,IVY,IVZ  = grid.ind.v₁::Int,grid.ind.v₂::Int,grid.ind.v₃::Int
+  @. SwapData[ghost_Lst:ghost_Led,:,:,IVX] *= -1
 
   return nothing;
 end
 
 
-function X1R_Reflective!(U::CuArray{T,4},grid) where T
+function X1R_Reflecting!(U::CuArray{T,4},grid) where T
   Nghost = grid.Nghost::Int;
 
   # Define the ghost zone index and boundary zone index
@@ -32,11 +36,15 @@ function X1R_Reflective!(U::CuArray{T,4},grid) where T
   TranData = @view U[:, end -  bval_Rst: 1:end -  bval_Red,:,:];
   copyto!(SwapData , TranData);
 
+  # Reflecting the X-AXIS Velocity
+  IVX,IVY,IVZ  = grid.ind.v₁::Int,grid.ind.v₂::Int,grid.ind.v₃::Int
+  @. SwapData[end - ghost_Rst:end - ghost_Red,:,:,IVX] *= -1
+
   return nothing;
 end
 
 
-function X2L_Reflective!(U::CuArray{T,4},grid) where T
+function X2L_Reflecting!(U::CuArray{T,4},grid) where T
   Nghost = grid.Nghost::Int;
 
   # Define the ghost zone index and boundary zone index
@@ -49,11 +57,15 @@ function X2L_Reflective!(U::CuArray{T,4},grid) where T
         
   copyto!(SwapData , TranData);
 
+  # Reflecting the Y-AXIS Velocity
+  IVX,IVY,IVZ  = grid.ind.v₁::Int,grid.ind.v₂::Int,grid.ind.v₃::Int
+  @. SwapData[ghost_Lst:ghost_Led,:,:,IVY] *= -1
+
   return nothing;
 end
 
 
-function X2R_Reflective!(U::CuArray{T,4},grid) where T
+function X2R_Reflecting!(U::CuArray{T,4},grid) where T
   Nghost = grid.Nghost::Int;
 
   # Define the ghost zone index and boundary zone index
@@ -64,11 +76,14 @@ function X2R_Reflective!(U::CuArray{T,4},grid) where T
   TranData = @view U[:,end -  bval_Rst: 1:end -  bval_Red,:,:];
         
   copyto!(SwapData , TranData);
+  # Reflecting the Y-AXIS Velocity
+  IVX,IVY,IVZ  = grid.ind.v₁::Int,grid.ind.v₂::Int,grid.ind.v₃::Int
+  @. SwapData[end - ghost_Rst:end - ghost_Red,:,:,IVX] *= -1
 
   return nothing
 end
 
-function X3L_Reflective!(U::CuArray{T,4},grid) where T
+function X3L_Reflecting!(U::CuArray{T,4},grid) where T
   Nghost = grid.Nghost::Int;
 
   # Define the ghost zone index and boundary zone index
@@ -81,10 +96,14 @@ function X3L_Reflective!(U::CuArray{T,4},grid) where T
         
   copyto!(SwapData , C.*TranData);
 
+  # Reflecting the Z-AXIS Velocity
+  IVX,IVY,IVZ  = grid.ind.v₁::Int,grid.ind.v₂::Int,grid.ind.v₃::Int
+  @. SwapData[ghost_Lst:ghost_Led,:,:,IVZ] *= -1
+
   return nothing
 end
 
-function X3R_Reflective!(U::CuArray{T,4},grid) where T
+function X3R_Reflecting!(U::CuArray{T,4},grid) where T
   Nghost = grid.Nghost::Int;
 
   # Define the ghost zone index and boundary zone index
@@ -95,6 +114,10 @@ function X3R_Reflective!(U::CuArray{T,4},grid) where T
   TranData = @view U[:,:,end -  bval_Rst: 1:end -  bval_Red,:];
         
   copyto!(SwapData , TranData);
+
+  # Reflecting the Z-AXIS Velocity
+  IVX,IVY,IVZ  = grid.ind.v₁::Int,grid.ind.v₂::Int,grid.ind.v₃::Int
+  @. SwapData[end - ghost_Rst:end - ghost_Red,:,:,IVZ] *= -1
 
   return nothing
 end

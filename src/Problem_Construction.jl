@@ -188,8 +188,8 @@ function GridConstruction(Nx,Ny,Nz,nx,ny,nz, Lx,Ly,Lz;
   dV  = CUDA.@allowscalar Δx1f[1]*Δx2f[1]*Δx3f[1];
 
   # Check if user define the Boundary correctly
-  N_B = length(findall(Boundary.=="Outflow")) +length(findall(Boundary.=="Periodic")) +
-        length(findall(Boundary.=="Reflective"));
+  N_B = length(findall(Boundary.=="Outflow")) + length(findall(Boundary.=="Periodic")) +
+        length(findall(Boundary.=="Reflecting"));
   N_B == 6 ? nothing : error("Boundary is not declared correctly!");
 
   Bval_func_list = []

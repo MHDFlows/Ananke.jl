@@ -80,9 +80,9 @@ function UpdateCFL!(prob,W; Coef=0.3, γ = 5/3)
   dt = Coef*minimum((Δx₁/vxmax, Δx₂/vymax, Δx₃/vzmax, 
                      Δx₁/csmax, Δx₂/csmax, Δx₃/csmax,dt))
 
-  if MPI
-    dt = Get_GlobalMin(dt,prob.grid.MPI)
-  end
+  #if MPI
+  #  dt = Get_GlobalMin(dt,prob.grid.MPI)
+  #end
   
   if isnan(dt)
     error("detected NaN in CFL function!");
@@ -117,7 +117,7 @@ function PrimitivetoConserved!(prim,con,prob)
   
   rho_floor = 1e-15;
   pre_floor = 1e-15;
-  ρc =  view(con, is:ie ,js:je, ks:ke,IDN)
+  ρc = view(con, is:ie ,js:je, ks:ke,IDN)
   KE = view(prob.tmp.wl,is:ie ,js:je ,ks:ke,IDN)
    ρ, p, e = view(prim, is:ie ,js:je ,ks:ke, IDN), view(prim, is:ie, js:je, ks:ke, IPR), view( con, is:ie, js:je, ks:ke, IEN)
   iv,jv,kv = view(prim, is:ie ,js:je, ks:ke, IVX), view(prim, is:ie, js:je, ks:ke, IVY), view(prim, is:ie, js:je, ks:ke, IVZ)

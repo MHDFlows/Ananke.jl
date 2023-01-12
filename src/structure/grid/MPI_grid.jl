@@ -99,11 +99,11 @@ function MPIGridConstruction(Nx,Ny,Nz, nx, ny, nz, Lx,Ly,Lz
     comm = MPI.COMM_WORLD
     Comm_rank = MPI.Comm_rank
     #Get the total pros called by the MPI
-    Total_pros = MPI.Comm_size(comm)
+    nprocs    = MPI.Comm_size(comm)
     # Get total core number defined by the user
     Ncx,Ncy,Ncz = div(Nx,nx),div(Ny,ny),div(Nz,nz)
-    if Total_pros != Ncx*Ncy*Ncz
-      error("MPI pros: ($(Total_pros) pros) and user defined pros: ($(Ncx*Ncy*Ncz) procs) is not matched ")
+    if nprocs != Ncx*Ncy*Ncz
+      error("MPI pros: ($(nprocs) pros) and user defined pros: ($(Ncx*Ncy*Ncz) procs) is not matched ")
     end
     LL = GetRankMap(Ncx,Ncy,Ncz).-1
     Neighbor_ind = Get_Neighbor(LL,Comm_rank(comm))
