@@ -32,7 +32,7 @@ function TimeIntegrator!(prob,t₀ :: Number,N₀ :: Int;
   end
 
   # Set Up the dashboard
-  prog = Progress(N₀; desc = "Simulation in rogress :", 
+  prog = Progress(N₀-prob.clock.step; desc = "Simulation in rogress :", 
                     barglyphs=BarGlyphs('|','█', ['▁' ,'▂' ,'▃' ,'▄' ,'▅' ,'▆', '▇'],' ','|',),
                     barlen=10, showspeed=true)
 
