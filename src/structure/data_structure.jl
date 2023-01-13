@@ -51,7 +51,7 @@ struct Problem{usr_foo,to}
 end
 
 "Type Flag"
-struct Flag <: AbstructFlag
+struct Flag{B1L,B1R,B2L,B2R,B3L,B3R} <: AbstructFlag
             "B-field"
             b :: Bool
           "Coordinate System"
@@ -61,12 +61,12 @@ struct Flag <: AbstructFlag
      "The order the time integration"
    TimelOrder :: Int
         "Boundary Condition"
-        B_X1L :: String
-        B_X1R :: String
-        B_X2L :: String
-        B_X2R :: String
-        B_X3L :: String
-        B_X3R :: String
+        B_X1L :: B1L
+        B_X1R :: B1R
+        B_X2L :: B2L
+        B_X2R :: B2R
+        B_X3L :: B3L
+        B_X3R :: B3R
 end
 
 "Type Equation"

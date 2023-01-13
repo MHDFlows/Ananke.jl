@@ -188,17 +188,21 @@ function GridConstruction(Nx,Ny,Nz,nx,ny,nz, Lx,Ly,Lz;
   dV  = CUDA.@allowscalar Δx1f[1]*Δx2f[1]*Δx3f[1];
 
   # Check if user define the Boundary correctly
-  N_B = length(findall(Boundary.=="Outflow")) + length(findall(Boundary.=="Periodic")) +
-        length(findall(Boundary.=="Reflecting"));
-  N_B == 6 ? nothing : error("Boundary is not declared correctly!");
 
   Bval_func_list = []
   for (BoundaryL,BoundaryR,i) in zip( Boundary[[1,3,5]],Boundary[[2,4,6]],(1,2,3))
-    XᵢL_BoundaryExchange! = eval(Symbol(:X,i,:L_,BoundaryL,:!))
-    XᵢR_BoundaryExchange! = eval(Symbol(:X,i,:R_,BoundaryL,:!))
-    
-    push!(Bval_func_list,XᵢL_BoundaryExchange!)
-    push!(Bval_func_list,XᵢR_BoundaryExchange!)
+    if eltype(BoundaryL) == Char 
+      XᵢL_BoundaryExchange! = eval(Symbol(:X,i,:L_,BoundaryL,:!))
+      push!(Bval_func_list,XᵢL_BoundaryExchange!)
+    else
+      push!(Bval_func_list,BoundaryL)
+    end
+    if eltype(BoundaryR) == Char
+      XᵢR_BoundaryExchange! = eval(Symbol(:X,i,:R_,BoundaryL,:!))  
+      push!(Bval_func_list,XᵢR_BoundaryExchange!)
+    else
+      push!(Bval_func_list,BoundaryR)
+    end
   end
 
   # Correct the nx,ny,nz if it is 1/2D case
