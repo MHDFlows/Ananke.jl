@@ -63,6 +63,7 @@ function PPMX₁_CUDA!(w, wl, wr,
     @inbounds q_ip1 = w[i+1,j,k]
     @inbounds q_ip2 = w[i+2,j,k]
 
+    # step 1
     qa =   q_i - q_im1;
     qb = q_ip1 -   q_i;
     dd_im1 = c1i*qa + c2i*(q_im1 - q_im2);
@@ -71,16 +72,17 @@ function PPMX₁_CUDA!(w, wl, wr,
 
     # Approximate interface average at i-1/2 and i+1/2 using PPM (CW eq 1.6)
     # KGF: group the biased stencil quantities to preserve FP symmetry
-    dph     = (c3i*q_im1 + c4i*q_i) +  (c5i*dd_im1 + c6i*dd);
+    dph = (c3i*q_im1 + c4i*q_i) +  (c5i*dd_im1 + c6i*dd);
     dph_ip1 = (c3i*q_i + c4i*q_ip1) + (c5i*dd + c6i*dd_ip1 );
 
     d2qc_im1 = q_im2 + q_i   - 2.0*q_im1;#
     d2qc     = q_im1 + q_ip1 - 2.0*q_i  ;# // (CD eq 85a) (no 1/2)
     d2qc_ip1 = q_i   + q_ip2 - 2.0*q_ip1;#
           
+  
     # i - 1/2
-    qa_tmp = dph - q_im1; #// (CD eq 84a)
-    qb_tmp = q_i - dph;     #// (CD eq 84b)
+    qa_tmp = dph - q_im1;  #// (CD eq 84a)
+    qb_tmp = q_i - dph;    #// (CD eq 84b)
     #// KGF: add the off-centered quantities first to preserve FP symmetry
     qa = 3.0*(q_im1 + q_i  - 2.0*dph);  /# (CD eq 85b)
     qb = d2qc_im1;    # (CD eq 85a) (no 1/2)
@@ -94,7 +96,7 @@ function PPMX₁_CUDA!(w, wl, wr,
     dph_tmp = 0.5*(q_im1 + q_i) - qd/6.0;
     #// Local extrema detected at i-1/2 face
     dph = qa_tmp*qb_tmp < 0.0 ? dph_tmp : dph
-      
+    
     # i+1/2
     qa_tmp = dph_ip1 - q_i;         #// (CD eq 84a)
     qb_tmp = q_ip1   - dph_ip1;   #// (CD eq 84b)
@@ -116,10 +118,10 @@ function PPMX₁_CUDA!(w, wl, wr,
     qplus  = dph_ip1
 
     dqf_minus = q_i - qminus #// (CS eq 25)
-    dqf_plus = qplus - q_i
-            
-    #//--- Step 4a. -----------------------------------------------------------------------
-    #// For uniform Cartesian-like coordinate: apply CS limiters to parabolic interpolant
+     dqf_plus = qplus - q_i
+          
+  # //--- Step 4a. -----------------------------------------------------------------------
+  #// For uniform Cartesian-like coordinate: apply CS limiters to parabolic interpolant
     qa_tmp = dqf_minus*dqf_plus
     qb_tmp = (q_ip1 - q_i)*(q_i- q_im1);
 
@@ -147,24 +149,23 @@ function PPMX₁_CUDA!(w, wl, wr,
 
     #// Check for local extrema
     if ((qa_tmp <= 0.0 || qb_tmp <= 0.0))
-      #// Check if relative change in limited 2nd deriv is > roundoff
-      if (rho <= (1.0 - (1.0e-12)))
-        #// Limit smooth extrema
-        qminus = tmp_m; #// (CS eq 23)
-         qplus = tmp_p;
-      end
-      #// No extrema detected
+        #// Check if relative change in limited 2nd deriv is > roundoff
+        if (rho <= (1.0 - (1.0e-12)))
+          #// Limit smooth extrema
+          qminus = tmp_m; #// (CS eq 23)
+           qplus = tmp_p;
+        end
+        #// No extrema detected
     else
-      #// Overshoot i-1/2,R / i,(-) state
-      if (abs(dqf_minus) >= 2.0*abs(dqf_plus))
-        qminus = tmp2_m;
-      end
-      #// Overshoot i+1/2,L / i,(+) state
-      if (abs(dqf_plus) >= 2.0*abs(dqf_minus))
-        qplus = tmp2_p;
-      end
-    end  
-
+        #// Overshoot i-1/2,R / i,(-) state
+        if (abs(dqf_minus) >= 2.0*abs(dqf_plus))
+          qminus = tmp2_m;
+        end
+        #// Overshoot i+1/2,L / i,(+) state
+        if (abs(dqf_plus) >= 2.0*abs(dqf_minus))
+          qplus = tmp2_p;
+        end
+    end          
     @inbounds wl[i+1,j,k] =  qplus
     @inbounds wr[i  ,j,k] = qminus
    end
@@ -186,113 +187,115 @@ function PPMX₂_CUDA!( w, wl, wr,
   local  C2 =  T(1.25)
 
   if k ∈ (ks:ke) && j ∈ (js-2:je+2)  && i ∈ (is:ie)
-    @inbounds q_i   = w[i,j  ,k]
-    @inbounds q_im2 = w[i,j-2,k]
-    @inbounds q_im1 = w[i,j-1,k]
-    @inbounds q_ip1 = w[i,j+1,k]
-    @inbounds q_ip2 = w[i,j+2,k]
+      @inbounds q_i   = w[i,j  ,k]
+      @inbounds q_im2 = w[i,j-2,k]
+      @inbounds q_im1 = w[i,j-1,k]
+      @inbounds q_ip1 = w[i,j+1,k]
+      @inbounds q_ip2 = w[i,j+2,k]
 
-    qa =   q_i - q_im1;
-    qb = q_ip1 -   q_i;
-    dd_im1 = c1i*qa + c2i*(q_im1 - q_im2);
-    dd     = c1i*qb + c2i*qa;
-    dd_ip1 = c1i*(q_ip2 - q_ip1) + c2i*qb;
+      # step 1
+      qa =   q_i - q_im1;
+      qb = q_ip1 -   q_i;
+      dd_im1 = c1i*qa + c2i*(q_im1 - q_im2);
+      dd     = c1i*qb + c2i*qa;
+      dd_ip1 = c1i*(q_ip2 - q_ip1) + c2i*qb;
 
-    # Approximate interface average at i-1/2 and i+1/2 using PPM (CW eq 1.6)
-    # KGF: group the biased stencil quantities to preserve FP symmetry
-    dph     = (c3i*q_im1 + c4i*q_i) +  (c5i*dd_im1 + c6i*dd);
-    dph_ip1 = (c3i*q_i + c4i*q_ip1) + (c5i*dd + c6i*dd_ip1 );
+      # Approximate interface average at i-1/2 and i+1/2 using PPM (CW eq 1.6)
+      # KGF: group the biased stencil quantities to preserve FP symmetry
+      dph = (c3i*q_im1 + c4i*q_i) +  (c5i*dd_im1 + c6i*dd);
+      dph_ip1 = (c3i*q_i + c4i*q_ip1) + (c5i*dd + c6i*dd_ip1 );
 
-    d2qc_im1 = q_im2 + q_i   - 2.0*q_im1;#
-    d2qc     = q_im1 + q_ip1 - 2.0*q_i  ;# // (CD eq 85a) (no 1/2)
-    d2qc_ip1 = q_i   + q_ip2 - 2.0*q_ip1;#
-          
-    # i - 1/2
-    qa_tmp = dph - q_im1; #// (CD eq 84a)
-    qb_tmp = q_i - dph;     #// (CD eq 84b)
-    #// KGF: add the off-centered quantities first to preserve FP symmetry
-    qa = 3.0*(q_im1 + q_i  - 2.0*dph);  /# (CD eq 85b)
-    qb = d2qc_im1;    # (CD eq 85a) (no 1/2)
-    qc = d2qc;   # (CD eq 85c) (no 1/2)
-    qd = 0.0;
-
-    if (sign(qa) == sign(qb) && sign(qa) == sign(qc))
-      qd = sign(qa)* min(C2*abs(qb), min(C2*abs(qc), abs(qa)));
-    end
-
-    dph_tmp = 0.5*(q_im1 + q_i) - qd/6.0;
-    #// Local extrema detected at i-1/2 face
-    dph = qa_tmp*qb_tmp < 0.0 ? dph_tmp : dph
-      
-    # i+1/2
-    qa_tmp = dph_ip1 - q_i;         #// (CD eq 84a)
-    qb_tmp = q_ip1   - dph_ip1;   #// (CD eq 84b)
-    #// KGF: add the off-centered quantities first to preserve FP symmetry
-    qa = 3.0*(q_i+ q_ip1 - 2.0*dph_ip1);  #// (CD eq 85b)
-    qb = d2qc;            #// (CD eq 85a) (no 1/2)
-    qc = d2qc_ip1;        #// (CD eq 85c) (no 1/2)
-    qd = 0.0;
-    if (sign(qa) == sign(qb) && sign(qa) == sign(qc))
-      qd = sign(qa)* min(C2*abs(qb), min(C2*abs(qc), abs(qa)));
-    end
-    dphip1_tmp = 0.5*(q_i + q_ip1) - qd/6.0;
-    #// Local extrema detected at i+1/2 face
-    dph_ip1 = qa_tmp*qb_tmp < 0.0 ? dphip1_tmp : dph_ip1;  
-
-    d2qf = 6.0*(dph + dph_ip1 - 2.0*q_i);
-
-    qminus = dph
-    qplus  = dph_ip1
-
-    dqf_minus = q_i - qminus #// (CS eq 25)
-    dqf_plus = qplus - q_i
+      d2qc_im1 = q_im2 + q_i   - 2.0*q_im1;#
+      d2qc     = q_im1 + q_ip1 - 2.0*q_i  ;# // (CD eq 85a) (no 1/2)
+      d2qc_ip1 = q_i   + q_ip2 - 2.0*q_ip1;#
             
-    #//--- Step 4a. -----------------------------------------------------------------------
+    
+      # i - 1/2
+      qa_tmp = dph - q_im1;  #// (CD eq 84a)
+      qb_tmp = q_i - dph;    #// (CD eq 84b)
+      #// KGF: add the off-centered quantities first to preserve FP symmetry
+      qa = 3.0*(q_im1 + q_i  - 2.0*dph);  /# (CD eq 85b)
+      qb = d2qc_im1;    # (CD eq 85a) (no 1/2)
+      qc = d2qc;   # (CD eq 85c) (no 1/2)
+      qd = 0.0;
+
+      if (sign(qa) == sign(qb) && sign(qa) == sign(qc))
+        qd = sign(qa)* min(C2*abs(qb), min(C2*abs(qc), abs(qa)));
+      end
+
+      dph_tmp = 0.5*(q_im1 + q_i) - qd/6.0;
+      #// Local extrema detected at i-1/2 face
+      dph = qa_tmp*qb_tmp < 0.0 ? dph_tmp : dph
+      
+      # i+1/2
+      qa_tmp = dph_ip1 - q_i;         #// (CD eq 84a)
+      qb_tmp = q_ip1   - dph_ip1;   #// (CD eq 84b)
+      #// KGF: add the off-centered quantities first to preserve FP symmetry
+      qa = 3.0*(q_i+ q_ip1 - 2.0*dph_ip1);  #// (CD eq 85b)
+      qb = d2qc;            #// (CD eq 85a) (no 1/2)
+      qc = d2qc_ip1;        #// (CD eq 85c) (no 1/2)
+      qd = 0.0;
+      if (sign(qa) == sign(qb) && sign(qa) == sign(qc))
+        qd = sign(qa)* min(C2*abs(qb), min(C2*abs(qc), abs(qa)));
+      end
+      dphip1_tmp = 0.5*(q_i + q_ip1) - qd/6.0;
+      #// Local extrema detected at i+1/2 face
+      dph_ip1 = qa_tmp*qb_tmp < 0.0 ? dphip1_tmp : dph_ip1;  
+
+      d2qf = 6.0*(dph + dph_ip1 - 2.0*q_i);
+
+      qminus = dph
+      qplus  = dph_ip1
+
+      dqf_minus = q_i - qminus #// (CS eq 25)
+       dqf_plus = qplus - q_i
+            
+    # //--- Step 4a. -----------------------------------------------------------------------
     #// For uniform Cartesian-like coordinate: apply CS limiters to parabolic interpolant
-    qa_tmp = dqf_minus*dqf_plus
-    qb_tmp = (q_ip1 - q_i)*(q_i- q_im1);
+      qa_tmp = dqf_minus*dqf_plus
+      qb_tmp = (q_ip1 - q_i)*(q_i- q_im1);
 
-    qa = d2qc_im1
-    qb = d2qc
-    qc = d2qc_ip1
-    qd = d2qf
-    qe = 0.0;
-    if (sign(qa) == sign(qb) && sign(qa) == sign(qc) && sign(qa) == sign(qd))
-    #// Extrema is smooth
-      qe = sign(qd)* min(min(C2*abs(qa), C2*abs(qb)), min(C2*abs(qc),abs(qd))); # (CS eq 22)
-    end
-
-    #// Check if 2nd derivative is close to roundoff error
-    qa = max(abs(q_im1), abs(q_im2))
-    qb = max(max(abs(q_i), abs(q_ip1), abs(q_ip2)));
-
-    #// Limiter is not sensitive to roundoff. Use limited ratio (MC eq 27)
-    rho = abs(qd) > (1.0e-12)*max(qa,qb) ? 0.0 : qe/qd
-
-    tmp_m  = q_i - rho*dqf_minus;
-    tmp_p  = q_i + rho*dqf_plus;
-    tmp2_m = q_i - 2.0*dqf_plus;
-    tmp2_p = q_i + 2.0*dqf_minus;
-
-    #// Check for local extrema
-    if ((qa_tmp <= 0.0 || qb_tmp <= 0.0))
-      #// Check if relative change in limited 2nd deriv is > roundoff
-      if (rho <= (1.0 - (1.0e-12)))
-        #// Limit smooth extrema
-        qminus = tmp_m; #// (CS eq 23)
-         qplus = tmp_p;
+      qa = d2qc_im1
+      qb = d2qc
+      qc = d2qc_ip1
+      qd = d2qf
+      qe = 0.0;
+      if (sign(qa) == sign(qb) && sign(qa) == sign(qc) && sign(qa) == sign(qd))
+      #// Extrema is smooth
+        qe = sign(qd)* min(min(C2*abs(qa), C2*abs(qb)), min(C2*abs(qc),abs(qd))); # (CS eq 22)
       end
-      #// No extrema detected
-    else
-      #// Overshoot i-1/2,R / i,(-) state
-      if (abs(dqf_minus) >= 2.0*abs(dqf_plus))
-        qminus = tmp2_m;
+
+      #// Check if 2nd derivative is close to roundoff error
+      qa = max(abs(q_im1), abs(q_im2))
+      qb = max(max(abs(q_i), abs(q_ip1), abs(q_ip2)));
+
+      #// Limiter is not sensitive to roundoff. Use limited ratio (MC eq 27)
+      rho = abs(qd) > (1.0e-12)*max(qa,qb) ? 0.0 : qe/qd
+
+      tmp_m  = q_i - rho*dqf_minus;
+      tmp_p  = q_i + rho*dqf_plus;
+      tmp2_m = q_i - 2.0*dqf_plus;
+      tmp2_p = q_i + 2.0*dqf_minus;
+
+      #// Check for local extrema
+      if ((qa_tmp <= 0.0 || qb_tmp <= 0.0))
+          #// Check if relative change in limited 2nd deriv is > roundoff
+          if (rho <= (1.0 - (1.0e-12)))
+            #// Limit smooth extrema
+            qminus = tmp_m; #// (CS eq 23)
+             qplus = tmp_p;
+          end
+          #// No extrema detected
+      else
+          #// Overshoot i-1/2,R / i,(-) state
+          if (abs(dqf_minus) >= 2.0*abs(dqf_plus))
+            qminus = tmp2_m;
+          end
+          #// Overshoot i+1/2,L / i,(+) state
+          if (abs(dqf_plus) >= 2.0*abs(dqf_minus))
+            qplus = tmp2_p;
+          end
       end
-      #// Overshoot i+1/2,L / i,(+) state
-      if (abs(dqf_plus) >= 2.0*abs(dqf_minus))
-        qplus = tmp2_p;
-      end
-    end  
                 
       @inbounds wl[i,j+1,k] =  qplus
       @inbounds wr[i,j  ,k] = qminus
@@ -422,6 +425,7 @@ function PPMX₃_CUDA!(w, wl, wr,
           qplus = tmp2_p;
         end
     end
+               
     @inbounds wl[i,j,k+1] =  qplus
     @inbounds wr[i,j,k  ] = qminus
   end
