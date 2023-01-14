@@ -37,7 +37,6 @@ function VL2!(prob)
       end
 
       @timeit_debug prob.debugTimer "Boundary Exchange" CUDA.@sync begin
-        BoundaryExchangeFunction!(Uᵢ, grid);
         BoundaryExchangeFunction!(W, grid);
       end
     end
