@@ -236,10 +236,10 @@ function GetFace_n_Edge(L_st,L_ed,N,Nghost;T=Float32)
   #Warning : For Nᵢ > 10000, Float32 data type will affect the calculation 
   # computation of determining the correct shape of x1f
   L_st ,L_ed = Float64(L_st), Float64(L_ed)
-  Δx   = ifelse( N==1, (L_ed-L_st),(L_ed-L_st)/N);
-  x1f  = collect(L_st:Δx:L_ed-Δx);
-  G1f1 = collect(1:1:Nghost)*Δx  .+ L_st .- Nghost*Δx
-  G1f2 = collect(1:1:Nghost)*Δx  .+ L_ed .-      0*Δx
+  Δx   = ifelse( N==1, (L_ed-L_st),(L_ed-L_st)/N)
+  x1f  = collect(0:1: N - 1)*Δx .+ L_st
+  G1f1 = collect(1:1:Nghost)*Δx .+ L_st .- Nghost*Δx
+  G1f2 = collect(1:1:Nghost)*Δx .+ L_ed .-      0*Δx
   x1f  = vcat(G1f1,x1f,G1f2)
   x1v  = (x1f[2:end] + x1f[1:end-1])/2;
   Δx1f = diff(x1f); 
