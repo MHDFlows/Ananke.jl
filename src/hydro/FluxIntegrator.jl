@@ -8,6 +8,9 @@ function FluxIntegrator!(U::CuArray{T,4},dt::t,prob;Order=1) where {T,t}
     # U (copy) -> U_half
     #  Update U_half from U + dFdx
     ComputeFlux!(prob;Order=Order);
+    
+    prob.usr_func(U, dt, prob);
+    
     @timeit_debug prob.debugTimer "Adding ∂F∂x" CUDA.@sync begin
       Add∂F∂x!(U,dt,prob);
     end
