@@ -55,7 +55,6 @@ function PPMX₁_CUDA!(w, wl, wr,
   local c6i = -T(1.0/6.0);
   local  C2 =  T(1.25);
 
-
   if k ∈ (ks:ke) && j ∈ (js:je) && i ∈ (is-2:ie+2)
     @inbounds q_i   = w[i  ,j,k]
     @inbounds q_im2 = w[i-2,j,k]
@@ -79,7 +78,6 @@ function PPMX₁_CUDA!(w, wl, wr,
     d2qc     = q_im1 + q_ip1 - 2.0*q_i  ;# // (CD eq 85a) (no 1/2)
     d2qc_ip1 = q_i   + q_ip2 - 2.0*q_ip1;#
           
-  
     # i - 1/2
     qa_tmp = dph - q_im1;  #// (CD eq 84a)
     qb_tmp = q_i - dph;    #// (CD eq 84b)
@@ -165,7 +163,8 @@ function PPMX₁_CUDA!(w, wl, wr,
         if (abs(dqf_plus) >= 2.0*abs(dqf_minus))
           qplus = tmp2_p;
         end
-    end          
+    end
+
     @inbounds wl[i+1,j,k] =  qplus
     @inbounds wr[i  ,j,k] = qminus
    end
@@ -180,11 +179,11 @@ function PPMX₂_CUDA!( w, wl, wr,
   k = (blockIdx().z - 1) * blockDim().z + threadIdx().z 
 
   # we will need c1i_i c1i_im1 c1i_ip1 in the future
-  T = eltype(w)
-  local c1i = c2i = c3i = c4i = T(0.5)
-  local c5i =  T(1.0/6.0)
-  local c6i = -T(1.0/6.0)
-  local  C2 =  T(1.25)
+  T  = eltype(w)
+  local c1i = c2i = c3i = c4i = T(0.5);
+  local c5i =  T(1.0/6.0);
+  local c6i = -T(1.0/6.0);
+  local  C2 =  T(1.25);
 
   if k ∈ (ks:ke) && j ∈ (js-2:je+2)  && i ∈ (is:ie)
       @inbounds q_i   = w[i,j  ,k]
