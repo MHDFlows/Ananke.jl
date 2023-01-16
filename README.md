@@ -9,9 +9,9 @@ At the end of this proejct, we aim to provide a prototype MHD code, which will s
 3. Support Isothermal/Adiabatic equation of state.  
 
 # Current State of development: 
-Version  : v.0.1.0  
+Version  : v.0.1.2
 Phase  I : Finished & under testing  
-Phase II : Under development  
+Phase II : Under development of MPI boundary value exchange module
 
 To achieve those features, we split our development into three phases:  
 ## I) Simple GPU HD simulation with HLLC/HLLE Solver supporting  uniform cartesian coordinate
