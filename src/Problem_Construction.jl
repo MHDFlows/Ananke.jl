@@ -188,25 +188,24 @@ function GridConstruction(Nx,Ny,Nz,nx,ny,nz, Lx,Ly,Lz;
   dV  = CUDA.@allowscalar Δx1f[1]*Δx2f[1]*Δx3f[1];
 
   # Check if user define the Boundary correctly
-  N_B = length(findall(Boundary.=="Outflow")) +length(findall(Boundary.=="Periodic")) +
-        length(findall(Boundary.=="Reflective"));
-  N_B == 6 ? nothing : error("Boundary is not declared correctly!");
 
-  X₁L_BoundaryExchange! = Boundary[1] == "Outflow" ? X1L_Outflow! : 
-                          Boundary[1] == "Reflective" ?  X1L_Reflective! : X1L_Periodic!;
-  X₁R_BoundaryExchange! = Boundary[2] == "Outflow" ? X1R_Outflow! : 
-                          Boundary[2] == "Reflective" ?  X1R_Reflective! : X1R_Periodic!;
-  X₂L_BoundaryExchange! = Boundary[3] == "Outflow" ? X2L_Outflow! : 
-                          Boundary[3] == "Reflective" ?  X2L_Reflective! : X2L_Periodic!;
-  X₂R_BoundaryExchange! = Boundary[4] == "Outflow" ? X2R_Outflow! : 
-                          Boundary[4] == "Reflective" ?  X2R_Reflective! : X2R_Periodic!;
-  X₃L_BoundaryExchange! = Boundary[5] == "Outflow" ? X3L_Outflow! : 
-                          Boundary[5] == "Reflective" ?  X3L_Reflective! : X3L_Periodic!;
-  X₃R_BoundaryExchange! = Boundary[6] == "Outflow" ? X3R_Outflow! : 
-                          Boundary[6] == "Reflective" ?  X3R_Reflective! : X3R_Periodic!;
+  Bval_func_list = []
+  for (BoundaryL,BoundaryR,i) in zip( Boundary[[1,3,5]],Boundary[[2,4,6]],(1,2,3))
+    if eltype(BoundaryL) == Char 
+      XᵢL_BoundaryExchange! = eval(Symbol(:X,i,:L_,BoundaryL,:!))
+      push!(Bval_func_list,XᵢL_BoundaryExchange!)
+    else
+      push!(Bval_func_list,BoundaryL)
+    end
+    if eltype(BoundaryR) == Char
+      XᵢR_BoundaryExchange! = eval(Symbol(:X,i,:R_,BoundaryL,:!))  
+      push!(Bval_func_list,XᵢR_BoundaryExchange!)
+    else
+      push!(Bval_func_list,BoundaryR)
+    end
+  end
 
   # Correct the nx,ny,nz if it is 1/2D case
-
   is,ie = Nx == 1 ? (1,1) : (1+Nghost, Nx+Nghost)
   js,je = Ny == 1 ? (1,1) : (1+Nghost, Ny+Nghost)
   ks,ke = Nz == 1 ? (1,1) : (1+Nghost, Nz+Nghost)
@@ -220,11 +219,11 @@ function GridConstruction(Nx,Ny,Nz,nx,ny,nz, Lx,Ly,Lz;
   BvalC = CUDA.ones(T,(Nx_tot, Ny_tot,Nghost, Nhydro))
 
   x1  = x₁_struct(is, ie, x1f, x1v, Δx1f, Δx1v, BvalA,
-                  X₁L_BoundaryExchange!, X₁R_BoundaryExchange!)
+                  Bval_func_list[1], Bval_func_list[2])
   x2  = x₂_struct(js, je, x2f, x2v, Δx2f, Δx2v, BvalB,
-                  X₂L_BoundaryExchange!, X₂R_BoundaryExchange!)
+                  Bval_func_list[3], Bval_func_list[4])
   x3  = x₃_struct(ks, ke, x3f, x3v, Δx3f, Δx3v, BvalC,
-                  X₃L_BoundaryExchange!, X₃R_BoundaryExchange!)
+                  Bval_func_list[5], Bval_func_list[6])
 
   return  Grid( Nx, Ny, Nz, Nx, Ny, Nz, Nghost,
                 Lx_st, Ly_st, Lz_st,
@@ -236,11 +235,12 @@ end
 function GetFace_n_Edge(L_st,L_ed,N,Nghost;T=Float32)
   #Warning : For Nᵢ > 10000, Float32 data type will affect the calculation 
   # computation of determining the correct shape of x1f
-  Δx   = ifelse(N==1, Float64(L_ed-L_st),Float64(L_ed-L_st)/N);
-  x1f  = collect(L_st:Δx:L_ed-Δx);
-  G1f1 = collect(L_st - Nghost*Δx: Δx : L_st -            Δx); 
-  G1f2 = collect(L_ed +      0*Δx: Δx : L_ed + (Nghost-1)*Δx); 
-  x1f  = vcat(G1f1,x1f,G1f2);
+  L_st ,L_ed = Float64(L_st), Float64(L_ed)
+  Δx   = ifelse( N==1, (L_ed-L_st),(L_ed-L_st)/(N-1))
+  x1f  = collect(     0: 1: N - 1)* Δx .+ L_st
+  G1f1 = collect(Nghost:-1:     1)*-Δx .+ L_st
+  G1f2 = collect(     1: 1:Nghost)* Δx .+ L_ed
+  x1f  = vcat(G1f1,x1f,G1f2)
   x1v  = (x1f[2:end] + x1f[1:end-1])/2;
   Δx1f = diff(x1f); 
   Δx1v = copy(Δx1f); #diff(x1v) for future;
@@ -295,7 +295,7 @@ show(io::IO, p::Problem) =
           "  │                         x₂(L/R) ",(p.flag.B_X2L,p.flag.B_X2R),'\n',
           "  │                         x₃(L/R) ",(p.flag.B_X3L,p.flag.B_X3R),'\n', 
           "  │     Setting                                            ",'\n',  
-          "  │     ├─────────── grid: grid (on GPU)", '\n',
+          "  │     ├─────────── grid: grid ( $(eltype(p.grid)) on GPU)", '\n',
           "  │     ├─────────── flux: flux", '\n',
           "  │     ├── user function: usr_func", '\n',
           "  └─────├─ conserved Vars: sol.U", '\n',

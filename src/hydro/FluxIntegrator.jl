@@ -8,6 +8,9 @@ function FluxIntegrator!(U::CuArray{T,4},dt::t,prob;Order=1) where {T,t}
     # U (copy) -> U_half
     #  Update U_half from U + dFdx
     ComputeFlux!(prob;Order=Order);
+    
+    prob.usr_func(U, dt, prob);
+    
     @timeit_debug prob.debugTimer "Adding ∂F∂x" CUDA.@sync begin
       Add∂F∂x!(U,dt,prob);
     end
@@ -75,10 +78,6 @@ function Add∂F∂x!(u_out,weight,prob)
   is,ie = grid.x1.is::Int,grid.x1.ie::Int;
   js,je = grid.x2.js::Int,grid.x2.je::Int;
   ks,ke = grid.x3.ks::Int,grid.x3.ke::Int;
-  
-  ∂ᵢ(A) = diff(A,dims=1)
-  ∂ⱼ(A) = diff(A,dims=2)
-  ∂ₖ(A) = diff(A,dims=3)
   
   # get the F,H,G Flux
   F,H,G = prob.flux.F,prob.flux.H,prob.flux.G

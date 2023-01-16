@@ -55,7 +55,6 @@ function PPMX₁_CUDA!(w, wl, wr,
   local c6i = -T(1.0/6.0);
   local  C2 =  T(1.25);
 
-
   if k ∈ (ks:ke) && j ∈ (js:je) && i ∈ (is-2:ie+2)
     @inbounds q_i   = w[i  ,j,k]
     @inbounds q_im2 = w[i-2,j,k]
@@ -63,6 +62,7 @@ function PPMX₁_CUDA!(w, wl, wr,
     @inbounds q_ip1 = w[i+1,j,k]
     @inbounds q_ip2 = w[i+2,j,k]
 
+    # step 1
     qa =   q_i - q_im1;
     qb = q_ip1 -   q_i;
     dd_im1 = c1i*qa + c2i*(q_im1 - q_im2);
@@ -71,7 +71,7 @@ function PPMX₁_CUDA!(w, wl, wr,
 
     # Approximate interface average at i-1/2 and i+1/2 using PPM (CW eq 1.6)
     # KGF: group the biased stencil quantities to preserve FP symmetry
-    dph     = (c3i*q_im1 + c4i*q_i) +  (c5i*dd_im1 + c6i*dd);
+    dph = (c3i*q_im1 + c4i*q_i) +  (c5i*dd_im1 + c6i*dd);
     dph_ip1 = (c3i*q_i + c4i*q_ip1) + (c5i*dd + c6i*dd_ip1 );
 
     d2qc_im1 = q_im2 + q_i   - 2.0*q_im1;#
@@ -79,8 +79,8 @@ function PPMX₁_CUDA!(w, wl, wr,
     d2qc_ip1 = q_i   + q_ip2 - 2.0*q_ip1;#
           
     # i - 1/2
-    qa_tmp = dph - q_im1; #// (CD eq 84a)
-    qb_tmp = q_i - dph;     #// (CD eq 84b)
+    qa_tmp = dph - q_im1;  #// (CD eq 84a)
+    qb_tmp = q_i - dph;    #// (CD eq 84b)
     #// KGF: add the off-centered quantities first to preserve FP symmetry
     qa = 3.0*(q_im1 + q_i  - 2.0*dph);  /# (CD eq 85b)
     qb = d2qc_im1;    # (CD eq 85a) (no 1/2)
@@ -94,7 +94,7 @@ function PPMX₁_CUDA!(w, wl, wr,
     dph_tmp = 0.5*(q_im1 + q_i) - qd/6.0;
     #// Local extrema detected at i-1/2 face
     dph = qa_tmp*qb_tmp < 0.0 ? dph_tmp : dph
-      
+    
     # i+1/2
     qa_tmp = dph_ip1 - q_i;         #// (CD eq 84a)
     qb_tmp = q_ip1   - dph_ip1;   #// (CD eq 84b)
@@ -116,10 +116,10 @@ function PPMX₁_CUDA!(w, wl, wr,
     qplus  = dph_ip1
 
     dqf_minus = q_i - qminus #// (CS eq 25)
-    dqf_plus = qplus - q_i
-            
-    #//--- Step 4a. -----------------------------------------------------------------------
-    #// For uniform Cartesian-like coordinate: apply CS limiters to parabolic interpolant
+     dqf_plus = qplus - q_i
+          
+  # //--- Step 4a. -----------------------------------------------------------------------
+  #// For uniform Cartesian-like coordinate: apply CS limiters to parabolic interpolant
     qa_tmp = dqf_minus*dqf_plus
     qb_tmp = (q_ip1 - q_i)*(q_i- q_im1);
 
@@ -147,23 +147,24 @@ function PPMX₁_CUDA!(w, wl, wr,
 
     #// Check for local extrema
     if ((qa_tmp <= 0.0 || qb_tmp <= 0.0))
-      #// Check if relative change in limited 2nd deriv is > roundoff
-      if (rho <= (1.0 - (1.0e-12)))
-        #// Limit smooth extrema
-        qminus = tmp_m; #// (CS eq 23)
-         qplus = tmp_p;
-      end
-      #// No extrema detected
+        #// Check if relative change in limited 2nd deriv is > roundoff
+        if (rho <= (1.0 - (1.0e-12)))
+          #// Limit smooth extrema
+          qminus = tmp_m; #// (CS eq 23)
+           qplus = tmp_p;
+        end
+        #// No extrema detected
     else
-      #// Overshoot i-1/2,R / i,(-) state
-      if (abs(dqf_minus) >= 2.0*abs(dqf_plus))
-        qminus = tmp2_m;
-      end
-      #// Overshoot i+1/2,L / i,(+) state
-      if (abs(dqf_plus) >= 2.0*abs(dqf_minus))
-        qplus = tmp2_p;
-      end
-    end               
+        #// Overshoot i-1/2,R / i,(-) state
+        if (abs(dqf_minus) >= 2.0*abs(dqf_plus))
+          qminus = tmp2_m;
+        end
+        #// Overshoot i+1/2,L / i,(+) state
+        if (abs(dqf_plus) >= 2.0*abs(dqf_minus))
+          qplus = tmp2_p;
+        end
+    end
+
     @inbounds wl[i+1,j,k] =  qplus
     @inbounds wr[i  ,j,k] = qminus
    end
@@ -178,11 +179,11 @@ function PPMX₂_CUDA!( w, wl, wr,
   k = (blockIdx().z - 1) * blockDim().z + threadIdx().z 
 
   # we will need c1i_i c1i_im1 c1i_ip1 in the future
-  T = eltype(w)
-  local c1i = c2i = c3i = c4i = T(0.5)
-  local c5i =  T(1.0/6.0)
-  local c6i = -T(1.0/6.0)
-  local  C2 =  T(1.25)
+  T  = eltype(w)
+  local c1i = c2i = c3i = c4i = T(0.5);
+  local c5i =  T(1.0/6.0);
+  local c6i = -T(1.0/6.0);
+  local  C2 =  T(1.25);
 
   if k ∈ (ks:ke) && j ∈ (js-2:je+2)  && i ∈ (is:ie)
       @inbounds q_i   = w[i,j  ,k]
