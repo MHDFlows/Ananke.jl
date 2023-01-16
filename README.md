@@ -9,7 +9,7 @@ At the end of this proejct, we aim to provide a prototype MHD code, which will s
 3. Support Isothermal/Adiabatic equation of state.  
 
 # Current State of development: 
-Version  : v.0.1.2
+Version  : v.0.1.2  
 Phase  I : Finished & under testing  
 Phase II : Under development of MPI boundary value exchange module
 
