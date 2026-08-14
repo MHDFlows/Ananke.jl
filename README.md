@@ -1,3 +1,4 @@
+# ~Ananke.jl~: DEPRECATED, use [Aether.jl](https://github.com/MHDFlows/Aether.jl) instead!
 # Project-Ananke
 
 Project Anake is a on-onging CFD project, a highly efficient Magnetohydrodynamics (MHD) direct fluid GPU based code implemented on high level programming language julia. It is inspired by [`Athena++`](https://github.com/PrincetonUniversity/athena)/[`MHDFLows.jl`](https://github.com/MHDFlows/MHDFlows.jl)/[`FourierFlows.jl`](https://github.com/FourierFlows/FourierFlows.jl). Its goals is to achieve a native GPU based, highly parallel, and efficient MHD simulation code using Finite Volume Method(FVM).
